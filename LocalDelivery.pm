@@ -1,7 +1,5 @@
 package Mail::LocalDelivery;
 
-# $Id: LocalDelivery.pm,v 1.3 2002/06/05 14:28:31 simon Exp $
-
 my $debuglevel=0;
 use Carp;
 
@@ -37,7 +35,7 @@ use constant DEFERRED  => EX_TEMPFAIL;
 use constant REJECTED  => 100;
 use constant DELIVERED => 0;
 
-$VERSION = '0.2';
+$VERSION = '0.21';
 
 =head1 NAME
 
@@ -66,9 +64,7 @@ sub _debug {
 
 =head1 METHODS
 
-=over 4
-
-=item C<new($data, %options)>
+=head2 C<new($data, %options)>
 
 This creates a new object for delivery. The data can be in the form of
 an array of lines, a C<Mail::Internet> object, a C<MIME::Entity> object
@@ -78,12 +74,12 @@ As for options, if you don't want the "new/cur/tmp" structure of a classical
 maildir, set the one_for_all option, and you'll still get
 the unique filenames.
 
- new ($data, one_for_all=>1);
+  new ($data, one_for_all=>1);
 
 If you want "%" signs in delivery addresses to be expanded according to
 strftime(3), you can turn on the C<interpolate_strftime> option: 
 
- new ($data, interpolate_strftime =>1);
+  new ($data, interpolate_strftime =>1);
 
 "interpolate_strftime" is not enabled by default for two
 reasons: backward compatibility (though nobody I know has a
@@ -92,7 +88,7 @@ people like to save messages by their correspondent's
 username, and that username may contain a % sign.  If you
 are one of these people, you should
 
- $username =~ s/%/%%/g;
+  $username =~ s/%/%%/g;
 
 You can also supply an "emergency" option to determine where mail
 goes in the worst case scenario.
@@ -133,7 +129,7 @@ sub new {
     return bless $self, $class;
 }
 
-=item C<deliver($where, ...)>
+=head2 C<deliver($where, ...)>
 
 You can choose to deliver the mail into a mailbox by calling
 the C<deliver> method; with no argument, this will look in:
@@ -174,12 +170,12 @@ If your arguments contain "/", C<deliver> will create
 arbitarily deep subdirectories accordingly.  Untaint your
 input by saying
 
- $username =~ s,/,-,g;
+  $username =~ s,/,-,g;
 
 C<deliver> will return the filename(s) that it saved to.
 
- my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
- my ($pathname) = deliver({noexit=>1}, file1);
+  my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
+  my ($pathname) = deliver({noexit=>1}, file1);
 
 If for any reason C<deliver> is unable to write the message
 (eg. you're over quota), Mail::LocalDelivery will attempt delivery
@@ -193,7 +189,7 @@ empty list.
 
 =cut
 
-sub nifty_interpolate { # perform ~user and %Y%m%d strftime interpolation
+sub _nifty_interpolate { # perform ~user and %Y%m%d strftime interpolation
     my $self = shift;
     my @out = @_;
     my @localtime = localtime;
@@ -213,7 +209,7 @@ sub deliver {
 # ----------------------------------------------------------
     my $self = shift;
 
-    my @files = $self->nifty_interpolate(@_);
+    my @files = $self->_nifty_interpolate(@_);
     if (not @files) { @files = ($self->{default_mbox}) }
 
     my @actually_saved_to_files = ();
@@ -248,7 +244,7 @@ sub deliver {
 			);
 
     for my $file (@files) {
-	my $mailbox_type = $self->mailbox_type($file);
+	my $mailbox_type = $self->_mailbox_type($file);
 	push @{$deliver_types{$mailbox_type}}, $file;
 	_debug(3, "$file is of type $mailbox_type");
     }
@@ -276,7 +272,7 @@ sub deliver {
 	    if (grep ($emergency eq $_, @files)) { # already tried that mailbox
                 return ();
 	    } else {
-		my $deliver_type = $self->mailbox_type($emergency);
+		my $deliver_type = $self->_mailbox_type($emergency);
 		my $deliver_handler = "deliver_to_$deliver_type";
 		@actually_saved_to_files = $self->$deliver_handler($emergency);
                 return if not @actually_saved_to_files;
@@ -287,7 +283,7 @@ sub deliver {
 }
 
 # ----------------------------------------------------------
- sub mailbox_type {
+sub _mailbox_type {
 # ----------------------------------------------------------
     my $self = shift;
     my $file = shift;
@@ -307,14 +303,14 @@ sub deliver {
 }
 
 # ----------------------------------------------------------
-sub deliver_to_mbox {
+sub _deliver_to_mbox {
 # ----------------------------------------------------------
     my $self = shift;
     my @saved_to = ();
     foreach my $file (@_) {
 	# auto-create the parent dir.
-	if (my $mkdir_error = mkdir_p(dirname($file))) { _debug(0, $mkdir_error); next; }
-	my $error = $self->write_message($file, {need_lock=>1, need_from=>1, extra_newline=>1});
+	if (my $mkdir_error = _mkdir_p(dirname($file))) { _debug(0, $mkdir_error); next; }
+	my $error = $self->_write_message($file, {need_lock=>1, need_from=>1, extra_newline=>1});
 	if (not $error) { push @saved_to, $file; }
 	else            { _debug(1, $error); }
     }
@@ -322,7 +318,7 @@ sub deliver_to_mbox {
 }
 
 # ----------------------------------------------------------
-sub write_message {
+sub _write_message {
 # ----------------------------------------------------------
     my $self       = shift;
     my $file       = shift;
@@ -336,7 +332,7 @@ sub write_message {
 
     unless (open(FH, ">>$file")) { return "Couldn't open $file: $!"; }
 
-    if ($write_opts->{'need_lock'}) { my $lock_error = audit_get_lock(\*FH, $file);
+    if ($write_opts->{'need_lock'}) { my $lock_error = _audit_get_lock(\*FH, $file);
 				      return $lock_error if $lock_error; }
     seek FH, 0, 2;
 
@@ -385,16 +381,16 @@ sub write_message {
 # NOT IMPLEMENTED
 # ----------------------------------------------------------
 
-sub deliver_to_mh        { my $self = shift; my @saved_to=(); } 
-sub deliver_to_msgprefix { my $self = shift; my @saved_to=(); }
+sub _deliver_to_mh        { my $self = shift; my @saved_to=(); } 
+sub _deliver_to_msgprefix { my $self = shift; my @saved_to=(); }
 
-# variables for deliver_to_maildir
+# variables for _deliver_to_maildir
 
 my $maildir_time    = 0;
 my $maildir_counter = 0;
 
 # ----------------------------------------------------------
-sub deliver_to_maildir {
+sub _deliver_to_maildir {
 # ----------------------------------------------------------
     my $self = shift;
     my @saved_to = ();
@@ -433,12 +429,12 @@ sub deliver_to_maildir {
 	_debug(3,"writing to $tmp_path");
 
 	# auto-create the maildir.
-	if (my $mkdir_error = mkdir_p(
+	if (my $mkdir_error = _mkdir_p(
 				      $self->{opts}->{"one_for_all"}
 				      ? ($file)
 				      : map { "$file/$_" } qw(tmp new cur))) { _debug(0, $mkdir_error); next; }
 
-	my $error = $self->write_message($tmp_path, {need_from=>0, need_lock=>0});
+	my $error = $self->_write_message($tmp_path, {need_from=>0, need_lock=>0});
 	if (not $error) { last; }  # only write to the first writeable maildir
 	else            { _debug(1, $error);
 			  unlink $tmp_path;
@@ -464,7 +460,7 @@ sub deliver_to_maildir {
 	} while ( -e "$newdir/$msg_file" );
 
 	# auto-create the maildir.
-	if (my $mkdir_error = mkdir_p(
+	if (my $mkdir_error = _mkdir_p(
 				      $self->{opts}->{"one_for_all"}
 				      ? ($file)
 				      : map { "$file/$_" } qw(tmp new cur))) { _debug(0, $mkdir_error); next; }
@@ -478,7 +474,7 @@ sub deliver_to_maildir {
 	    if ($! == &EXDEV) { # Invalid cross-device link, see /usr/**/include/*/errno.h
 		_debug(0,"Couldn't link $tmp_path to $new_path: $!");
 		_debug(0,"attempting direct maildir delivery to $new_path...");
-		push @saved_to, $self->deliver_to_maildir($file);
+		push @saved_to, $self->_deliver_to_maildir($file);
 		next;
 	    }
 	    else { _debug(0,"Couldn't link $tmp_path to $new_path: $!"); }
@@ -493,7 +489,7 @@ sub deliver_to_maildir {
 # utility functions
 # ----------------------------------------------------------
 
-sub audit_get_lock {
+sub _audit_get_lock {
     my $FH   = shift;
     my $file = shift;
     _debug(4, "  attempting to lock  file $file");
@@ -505,28 +501,23 @@ sub audit_get_lock {
     return $errstr;
 }
 
-sub mkdir_p { # mkdir -p (also create parents if necessary)
+sub _mkdir_p { # mkdir -p (also create parents if necessary)
     return if not @_;
     return if not length $_[0];
     foreach (@_) {
 	next if -d $_;
 	while (/\/$/) { chop }
 	_debug(4, "$_ doesn't exist, creating.");
-	if (my $error = mkdir_p(dirname($_))) { return $error }
+	if (my $error = _mkdir_p(dirname($_))) { return $error }
 	mkdir ($_, 0777) or return "unable to mkdir $_: $!";
     }
     return;
 }
 
-sub myALRM { die "alarm\n" }
+sub _myALRM { die "alarm\n" }
 
 1;
 __END__
-
-=head1 LICENSE
-
-The usual. This program is free software; you can redistribute it
-and/or modify it under the same terms as Perl itself.
 
 =head1 CAVEATS
 
@@ -537,6 +528,10 @@ able to append to it.  Mail::LocalDelivery may not be able to create
 /var/spool/mail because programs run from .forward don't
 inherit the special permissions needed to create files in
 that directory.
+
+=head1 SEE ALSO
+
+L<Mail::Internet>, L<Mail::SMTP>, L<Mail::Audit>
 
 =head1 AUTHORS
 
@@ -549,6 +544,7 @@ thing, and it makes C<Mail::Audit> maintainable again.
 So the authors of this are really the authors of C<Mail::Audit>:
 Simon Cozens <simon@cpan.org> and Meng Weng Wong <mengwong@pobox.com>.
 
-=head1 SEE ALSO
+=head1 LICENSE
 
-L<Mail::Internet>, L<Mail::SMTP>, L<Mail::Audit>
+The usual. This program is free software; you can redistribute it
+and/or modify it under the same terms as Perl itself.

@@ -1,5 +1,7 @@
-Mail/LocalDelivery version 0.02
-===============================
+LocalDelivery.pm version 0.21
+=============================
+
+=head1 NAME
 
 Mail::LocalDelivery - Deliver mail to a local mailbox
 
@@ -15,9 +17,7 @@ Mail::LocalDelivery - Deliver mail to a local mailbox
 
 =head1 METHODS
 
-=over 4
-
-=item C<new($data, %options)>
+=head2 C<new($data, %options)>
 
 This creates a new object for delivery. The data can be in the form of
 an array of lines, a C<Mail::Internet> object, a C<MIME::Entity> object
@@ -27,12 +27,12 @@ As for options, if you don't want the "new/cur/tmp" structure of a classical
 maildir, set the one_for_all option, and you'll still get
 the unique filenames.
 
- new ($data, one_for_all=>1);
+  new ($data, one_for_all=>1);
 
 If you want "%" signs in delivery addresses to be expanded according to
 strftime(3), you can turn on the C<interpolate_strftime> option: 
 
- new ($data, interpolate_strftime =>1);
+  new ($data, interpolate_strftime =>1);
 
 "interpolate_strftime" is not enabled by default for two
 reasons: backward compatibility (though nobody I know has a
@@ -41,12 +41,12 @@ people like to save messages by their correspondent's
 username, and that username may contain a % sign.  If you
 are one of these people, you should
 
- $username =~ s/%/%%/g;
+  $username =~ s/%/%%/g;
 
 You can also supply an "emergency" option to determine where mail
 goes in the worst case scenario.
 
-=item C<deliver($where, ...)>
+=head2 C<deliver($where, ...)>
 
 You can choose to deliver the mail into a mailbox by calling
 the C<deliver> method; with no argument, this will look in:
@@ -87,12 +87,12 @@ If your arguments contain "/", C<deliver> will create
 arbitarily deep subdirectories accordingly.  Untaint your
 input by saying
 
- $username =~ s,/,-,g;
+  $username =~ s,/,-,g;
 
 C<deliver> will return the filename(s) that it saved to.
 
- my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
- my ($pathname) = deliver({noexit=>1}, file1);
+  my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
+  my ($pathname) = deliver({noexit=>1}, file1);
 
 If for any reason C<deliver> is unable to write the message
 (eg. you're over quota), Mail::LocalDelivery will attempt delivery
@@ -104,11 +104,6 @@ is set to the system mailbox.  If we were unable to save to
 the emergency mailbox, C<Mail::LocalDelivery> will return an
 empty list.
 
-=head1 LICENSE
-
-The usual. This program is free software; you can redistribute it
-and/or modify it under the same terms as Perl itself.
-
 =head1 CAVEATS
 
 If your mailbox file in /var/spool/mail/ doesn't already
@@ -118,6 +113,10 @@ able to append to it.  Mail::LocalDelivery may not be able to create
 /var/spool/mail because programs run from .forward don't
 inherit the special permissions needed to create files in
 that directory.
+
+=head1 SEE ALSO
+
+L<Mail::Internet>, L<Mail::SMTP>, L<Mail::Audit>
 
 =head1 AUTHORS
 
@@ -130,6 +129,7 @@ thing, and it makes C<Mail::Audit> maintainable again.
 So the authors of this are really the authors of C<Mail::Audit>:
 Simon Cozens <simon@cpan.org> and Meng Weng Wong <mengwong@pobox.com>.
 
-=head1 SEE ALSO
+=head1 LICENSE
 
-L<Mail::Internet>, L<Mail::SMTP>, L<Mail::Audit>
+The usual. This program is free software; you can redistribute it
+and/or modify it under the same terms as Perl itself.
