@@ -1,5 +1,10 @@
 Revision history for Perl extension Mail::LocalDelivery.
 
+0.02  Mon Oct 25 16:21:00 2004
+	new maintainer
+	minor changes to the documentation
+	added META.yml
+
 0.01  Wed Jun  5 13:32:45 2002
 	- original version; created by h2xs 1.21 with options
 		-XA -n Mail::LocalDelivery

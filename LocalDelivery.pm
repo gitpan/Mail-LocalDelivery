@@ -37,7 +37,7 @@ use constant DEFERRED  => EX_TEMPFAIL;
 use constant REJECTED  => 100;
 use constant DELIVERED => 0;
 
-$VERSION = '0.1';
+$VERSION = '0.2';
 
 =head1 NAME
 
@@ -528,10 +528,6 @@ __END__
 The usual. This program is free software; you can redistribute it
 and/or modify it under the same terms as Perl itself.
 
-=head1 BUGS
-
-http://rt.cpan.org/NoAuth/Bugs.html?Dist=Mail-LocalDelivery
-
 =head1 CAVEATS
 
 If your mailbox file in /var/spool/mail/ doesn't already
@@ -543,6 +539,8 @@ inherit the special permissions needed to create files in
 that directory.
 
 =head1 AUTHORS
+
+Maintained by Jose Castro, C<cog@cpan.org>.
 
 This module is essentially C<Mail::Audit>'s brains, which we
 scooped out into a separate module since local delivery is a useful
