@@ -8,5 +8,5 @@ t/deliver.t
 t/pod.t
 t/pod-coverage.t
 t/messages/simple.msg
-META.yml                                 Module meta-data (added by MakeMaker)
 LICENSE
+META.yml                                 Module meta-data (added by MakeMaker)

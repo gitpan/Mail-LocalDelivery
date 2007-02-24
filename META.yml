@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Mail-LocalDelivery
-version:             0.302
+version:             0.303
 abstract:            Deliver mail to a local mailbox
 license:             perl
 generated_by:        ExtUtils::MakeMaker version 6.31
