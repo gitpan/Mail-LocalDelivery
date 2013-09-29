@@ -1,12 +1,15 @@
 Changes
-lib/Mail/LocalDelivery.pm
-Makefile.PL
-MANIFEST
-README
-t/01-basic.t
-t/deliver.t
-t/pod.t
-t/pod-coverage.t
-t/messages/simple.msg
 LICENSE
-META.yml                                 Module meta-data (added by MakeMaker)
+MANIFEST
+META.json
+META.yml
+Makefile.PL
+README
+dist.ini
+lib/Mail/LocalDelivery.pm
+t/00-compile.t
+t/000-report-versions-tiny.t
+t/deliver.t
+t/messages/simple.msg
+xt/release/changes_has_content.t
+xt/release/pod-syntax.t

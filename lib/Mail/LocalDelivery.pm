@@ -1,6 +1,9 @@
 use strict;
-
 package Mail::LocalDelivery;
+{
+  $Mail::LocalDelivery::VERSION = '0.305';
+}
+# ABSTRACT: Deliver mail to a local mailbox
 
 use Carp;
 use Email::Abstract;
@@ -8,41 +11,14 @@ use File::Basename;
 use Fcntl ':flock';
 use Mail::Internet;
 use Sys::Hostname; (my $HOSTNAME = hostname) =~ s/\..*//;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK $ASSUME_MSGPREFIX);
 
-my $debuglevel    = 0;
-$ASSUME_MSGPREFIX = 0;
+my $debuglevel        = 0;
+our $ASSUME_MSGPREFIX = 0;
 
 use constant DEFERRED  => 75;
 use constant REJECTED  => 100;
 use constant DELIVERED => 0;
 
-$VERSION = '0.304';
-
-=head1 NAME
-
-Mail::LocalDelivery - Deliver mail to a local mailbox
-
-=head1 VERSION
-
-version 0.304
-
- $Id: /my/pep/Mail-LocalDelivery/trunk/lib/Mail/LocalDelivery.pm 30787 2007-02-27T01:42:43.891228Z rjbs  $
-
-=head1 SYNOPSIS
-
-  use Mail::LocalDelivery;
-  my $x = new Mail::LocalDelivery(\@some_text);
-  $x->deliver(); # Append to /var/spool/mail/you
-  $x->deliver("/home/simon/mail/test") # Deliver to Unix mailbox
-  $x->deliver("/home/simon/mail/test/") # Deliver to maildir
-
-=head1 DESCRIPTION
-
-This module has been superseded by L<Email::LocalDelivery>, which provides
-nearly all of the same features, and more, and better.  Use it instead.
-
-=cut
 
 sub _debug {
   my ($self, $priority, $what) = @_;
@@ -57,38 +33,6 @@ sub _debug {
   warn "$line($subroutine): $what\n";
 }
 
-=head1 METHODS
-
-=head2 C<new($data, %options)>
-
-This creates a new object for delivery. The data can be in the form of
-an array of lines, a C<Mail::Internet> object, a C<MIME::Entity> object
-or a filehandle. 
-
-As for options, if you don't want the "new/cur/tmp" structure of a classical
-maildir, set the one_for_all option, and you'll still get
-the unique filenames.
-
-  new($data, one_for_all => 1);
-
-If you want "%" signs in delivery addresses to be expanded according to
-strftime(3), you can turn on the C<interpolate_strftime> option: 
-
-  new ($data, interpolate_strftime => 1);
-
-"interpolate_strftime" is not enabled by default for two
-reasons: backward compatibility (though nobody I know has a
-% in any mail folder name) and username interpolation: many
-people like to save messages by their correspondent's
-username, and that username may contain a % sign.  If you
-are one of these people, you should
-
-  $username =~ s/%/%%/g;
-
-You can also supply an "emergency" option to determine where mail
-goes in the worst case scenario.
-
-=cut
 
 sub new {
   my $class = shift;
@@ -126,55 +70,6 @@ sub new {
   return bless $self => $class;
 }
 
-=head2 deliver
-
-  $delivery->deliver(@destinations);
-
-You can choose to deliver the mail into a mailbox by calling the C<deliver>
-method; with no argument, this will look in:
-
-=over 3
-
-=item 1 C<$ENV{MAIL}>
-
-=item 2 F</var/spool/mail/you>
-
-=item 3 F</var/mail/you>
-
-=item 4 F<~/Maildir/>
-
-=back
-
-Unix mailboxes are opened append-write, then locked F<LOCK_EX>, the mail
-written and then the mailbox unlocked and closed.  If Mail::LocalDelivery sees
-that you have a maildir style system, where the argument is a directory, it'll
-deliver in maildir style. If the path you specify does not exist,
-Mail::LocalDelivery will assume mbox, unless it ends in /, which means maildir.
-
-If multiple maildirs are given, Mail::LocalDelivery will use hardlinks to
-deliver to them, so that multiple hardlinks point to the same underlying file.
-(If the maildirs turn out to be on multiple filesystems, you get multiple
-files.)
-
-If your arguments contain "/", C<deliver> will create arbitarily deep
-subdirectories accordingly.  Untaint your input by saying
-
-  $username =~ s,/,-,g;
-
-C<deliver> will return the filename(s) that it saved to.
-
-  my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
-  my ($pathname) = deliver({noexit=>1}, file1);
-
-If for any reason C<deliver> is unable to write the message (eg. you're over
-quota), Mail::LocalDelivery will attempt delivery to the C<emergency> mailbox.
-If C<deliver> was called with multiple destinations, the C<emergency> action
-will only be taken if the message couldn't be delivered to any of the desired
-destinations.  By default the C<emergency> mailbox is set to the system
-mailbox.  If we were unable to save to the emergency mailbox,
-C<Mail::LocalDelivery> will return an empty list.
-
-=cut
 
 sub _nifty_interpolate {
   # perform ~user and %Y%m%d strftime interpolation
@@ -184,7 +79,7 @@ sub _nifty_interpolate {
 
   if ($self->{interpolate_strftime} and grep { /%/ } @out) {
     require POSIX;
-    import POSIX qw(strftime);
+    POSIX->import(qw(strftime));
     @out = map { strftime($_, @localtime) } @out;
   }
 
@@ -609,12 +504,110 @@ sub _mkdir_p {
 }
 
 1;
+
 __END__
 
-=head1 LICENSE
+=pod
 
-The usual: this program is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+=head1 NAME
+
+Mail::LocalDelivery - Deliver mail to a local mailbox
+
+=head1 VERSION
+
+version 0.305
+
+=head1 SYNOPSIS
+
+  use Mail::LocalDelivery;
+  my $x = new Mail::LocalDelivery(\@some_text);
+  $x->deliver(); # Append to /var/spool/mail/you
+  $x->deliver("/home/simon/mail/test") # Deliver to Unix mailbox
+  $x->deliver("/home/simon/mail/test/") # Deliver to maildir
+
+=head1 DESCRIPTION
+
+This module has been superseded by L<Email::LocalDelivery>, which provides
+nearly all of the same features, and more, and better.  Use it instead.
+
+=head1 METHODS
+
+=head2 C<new($data, %options)>
+
+This creates a new object for delivery. The data can be in the form of
+an array of lines, a C<Mail::Internet> object, a C<MIME::Entity> object
+or a filehandle. 
+
+As for options, if you don't want the "new/cur/tmp" structure of a classical
+maildir, set the one_for_all option, and you'll still get
+the unique filenames.
+
+  new($data, one_for_all => 1);
+
+If you want "%" signs in delivery addresses to be expanded according to
+strftime(3), you can turn on the C<interpolate_strftime> option: 
+
+  new ($data, interpolate_strftime => 1);
+
+"interpolate_strftime" is not enabled by default for two
+reasons: backward compatibility (though nobody I know has a
+% in any mail folder name) and username interpolation: many
+people like to save messages by their correspondent's
+username, and that username may contain a % sign.  If you
+are one of these people, you should
+
+  $username =~ s/%/%%/g;
+
+You can also supply an "emergency" option to determine where mail
+goes in the worst case scenario.
+
+=head2 deliver
+
+  $delivery->deliver(@destinations);
+
+You can choose to deliver the mail into a mailbox by calling the C<deliver>
+method; with no argument, this will look in:
+
+=over 3
+
+=item 1 C<$ENV{MAIL}>
+
+=item 2 F</var/spool/mail/you>
+
+=item 3 F</var/mail/you>
+
+=item 4 F<~/Maildir/>
+
+=back
+
+Unix mailboxes are opened append-write, then locked F<LOCK_EX>, the mail
+written and then the mailbox unlocked and closed.  If Mail::LocalDelivery sees
+that you have a maildir style system, where the argument is a directory, it'll
+deliver in maildir style. If the path you specify does not exist,
+Mail::LocalDelivery will assume mbox, unless it ends in /, which means maildir.
+
+If multiple maildirs are given, Mail::LocalDelivery will use hardlinks to
+deliver to them, so that multiple hardlinks point to the same underlying file.
+(If the maildirs turn out to be on multiple filesystems, you get multiple
+files.)
+
+If your arguments contain "/", C<deliver> will create arbitarily deep
+subdirectories accordingly.  Untaint your input by saying
+
+  $username =~ s,/,-,g;
+
+C<deliver> will return the filename(s) that it saved to.
+
+  my  @pathnames = deliver({noexit=>1}, file1, file2, ... );
+  my ($pathname) = deliver({noexit=>1}, file1);
+
+If for any reason C<deliver> is unable to write the message (eg. you're over
+quota), Mail::LocalDelivery will attempt delivery to the C<emergency> mailbox.
+If C<deliver> was called with multiple destinations, the C<emergency> action
+will only be taken if the message couldn't be delivered to any of the desired
+destinations.  By default the C<emergency> mailbox is set to the system
+mailbox.  If we were unable to save to the emergency mailbox,
+C<Mail::LocalDelivery> will return an empty list.
 
 =head1 CAVEATS
 
@@ -628,14 +621,7 @@ inherit the special permissions needed to create files in that directory.
 
 L<Mail::Internet>, L<Mail::SMTP>, L<Mail::Audit>
 
-=head1 PERL EMAIL PROJECT
-
-This module is maintained by the Perl Email Project, and is considered
-superseded by L<Email::LocalDelivery>.
-
-L<http://emailproject.perl.org/wiki/Mail::LocalDelivery>
-
-=head1 AUTHORS
+=head1 HISTORY
 
 This code was originally written by Simon Cozens, extended by Meng Weng Wong,
 maintained by Jose Castro, then passed along for maintenance to the Perl Email
@@ -643,3 +629,33 @@ Project.
 
 Its current maintainer is Ricardo Signes, sponsored by Listbox.com.
 
+=head1 AUTHORS
+
+=over 4
+
+=item *
+
+Simon Cozens
+
+=item *
+
+Meng Weng Wong
+
+=item *
+
+Jose Castro
+
+=item *
+
+Ricardo SIGNES
+
+=back
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2000 by Simon Cozens.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
